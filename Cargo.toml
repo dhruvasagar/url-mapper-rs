@@ -1,0 +1,13 @@
+[package]
+name = "url-mapper-rs"
+version = "0.1.0"
+authors = ["Dhruva Sagar <dhruva.sagar@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.41"
+config = { version = "0.11.0", features = ["json"] }
+lazy_static = "1.4.0"
+serde = { version = "1.0.126", features = ["derive"] }

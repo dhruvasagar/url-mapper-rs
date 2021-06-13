@@ -1,0 +1,4 @@
+/target
+
+config/*.json
+!config/default.json
