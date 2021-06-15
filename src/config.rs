@@ -7,6 +7,7 @@ use std::env;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Database {
     pub url: String,
+    pub max_connections: u32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
