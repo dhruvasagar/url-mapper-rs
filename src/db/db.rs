@@ -5,8 +5,8 @@ use crate::config::CONFIG;
 
 #[derive(Debug, FromRow, Clone, Serialize, Deserialize)]
 pub struct UrlMap {
-    key: String,
-    url: String,
+    pub key: String,
+    pub url: String,
 }
 
 impl UrlMap {

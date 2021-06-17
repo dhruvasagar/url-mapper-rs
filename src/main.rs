@@ -1,6 +1,6 @@
 use anyhow::Result;
 use crate::config::CONFIG;
-use crate::db::{DB, UrlMap};
+use crate::db::{DB, Message, Manager};
 
 mod config;
 mod db;
@@ -13,11 +13,22 @@ async fn main() -> Result<()> {
     );
 
     let db = DB::new().await.unwrap();
-    let res = sqlx::query_as::<_, UrlMap>("select * from url_maps")
-        .fetch_all(&db.pool)
-        .await?;
+    let (db_tx, db_rx) = tokio::sync::mpsc::channel(32);
+    tokio::spawn(async move {
+        let mut manager = Manager::new(db, db_rx);
+        manager.listen().await;
+    });
 
-    println!("results: {:?}", res);
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    match db_tx.send(Message::DeleteUrlMap { key: "linkedin".into(), resp: tx }).await {
+        Ok(_) => {},
+        Err(e) => eprintln!("Failed to send to database manager: {}", e)
+    }
+    let url_maps = rx.await.unwrap();
+    match url_maps {
+        Ok(ums) => println!("url_maps: {:?}", ums),
+        Err(e) => eprintln!("Unable to get url_maps: {}", e)
+    }
 
     Ok(())
 }
