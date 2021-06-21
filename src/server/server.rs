@@ -2,11 +2,11 @@ use hyper::Server;
 use crate::config::CONFIG;
 use routerify::RouterService;
 use anyhow::Result;
-use crate::server::routes::router;
 use tracing::info;
+use super::routes;
 
 pub async fn listen() -> Result<()> {
-    let router = router();
+    let router = routes::router();
     let service = RouterService::new(router).unwrap();
     let addr = format!("{}:{}", CONFIG.host, CONFIG.port)
         .parse()?;
