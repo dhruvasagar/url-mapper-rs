@@ -6,22 +6,24 @@ use hyper::{
     StatusCode
 };
 use routerify::{
-    Error,
     Middleware,
     Router,
     RouterBuilder,
     ext::RequestExt,
     RequestInfo
 };
+use anyhow::{Error, Result};
 use tracing::{info, error};
 use tokio::sync::mpsc::Sender;
 
-async fn logger(req: Request<Body>) -> Result<Request<Body>, Error> {
+mod api;
+
+async fn logger(req: Request<Body>) -> Result<Request<Body>> {
     info!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
     Ok(req)
 }
 
-async fn home_handler(_: Request<Body>) -> Result<Response<Body>, Error> {
+async fn home_handler(_: Request<Body>) -> Result<Response<Body>> {
     Ok(Response::new(Body::from("Url Mapper in Rust!")))
 }
 
@@ -63,7 +65,7 @@ macro_rules! recv_failed {
     }
 }
 
-async fn redirect_handler(req: Request<Body>) -> Result<Response<Body>, Error> {
+async fn redirect_handler(req: Request<Body>) -> Result<Response<Body>> {
     let sender = req.data::<Sender<Message>>().unwrap();
     let key = req.param("key").unwrap();
     let (tx, rx) = tokio::sync::oneshot::channel();
@@ -84,5 +86,6 @@ pub fn router() -> RouterBuilder<Body, Error> {
         .middleware(Middleware::pre(logger))
         .get("/", home_handler)
         .get("/:key", redirect_handler)
+        .scope("/api", api::router())
         .err_handler_with_info(error_handler)
 }

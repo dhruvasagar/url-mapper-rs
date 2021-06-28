@@ -1541,6 +1541,7 @@ dependencies = [
  "lazy_static",
  "routerify",
  "serde 1.0.126",
+ "serde_json",
  "sqlx",
  "tokio",
  "tracing",
