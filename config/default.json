@@ -1,6 +1,7 @@
 {
   "host": "127.0.0.1",
   "port": 3000,
+  "auth_token": "This is a simple auth token, but long enough to be safe enough!",
   "database": {
     "url": "postgres:///testdb?sslmode=disable",
     "max_connections": 16

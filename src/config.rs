@@ -14,6 +14,7 @@ pub struct Database {
 pub struct Config {
     pub host: String,
     pub port: i32,
+    pub auth_token: String,
     pub database: Database,
 }
 
