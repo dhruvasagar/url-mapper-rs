@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=url_mapper_prod
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=admin
+  url-mapper-rs:
+    image: url-mapper-rs:v2
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgres://postgres:admin@db/url_mapper_prod?sslmode=disable
+    depends_on:
+      - db
+volumes:
+  pgdata:

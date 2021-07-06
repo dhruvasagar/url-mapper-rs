@@ -1,6 +1,6 @@
 use anyhow::Result;
 use crate::db::{DB, Manager};
-use tracing::{subscriber::set_global_default};
+use tracing::subscriber::set_global_default;
 use tracing_subscriber::FmtSubscriber;
 use server::Server;
 
