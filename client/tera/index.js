@@ -51,7 +51,8 @@
     })
   }
 
-  document.querySelectorAll(".delete-url-map").forEach(link => {
+  const delete_url_map_links = document.querySelectorAll(".delete-url-map")
+  Array.from(delete_url_map_links).forEach(link => {
     link.addEventListener("click", () => {
       const key = link.getAttribute('data')
       fetch(`/api/url_maps/${key}`, {
