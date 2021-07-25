@@ -5,6 +5,9 @@ use tracing_subscriber::FmtSubscriber;
 use server::Server;
 use std::process;
 
+#[macro_use]
+mod macros;
+
 mod config;
 mod db;
 mod server;

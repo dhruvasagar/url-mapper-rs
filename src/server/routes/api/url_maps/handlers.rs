@@ -2,61 +2,12 @@ use anyhow::Result;
 use serde::{Serialize, Deserialize};
 use hyper::{Body, Request, Response, body::to_bytes};
 use routerify::ext::RequestExt;
-use tokio::sync::mpsc::Sender;
-use crate::db::{UrlMap, Message};
-
-macro_rules! json_response {
-    (body: $body:expr) => {
-        Response::builder()
-            .header(hyper::header::CONTENT_TYPE, "application/json")
-            .body(serde_json::to_string($body).unwrap().into())
-            .unwrap()
-    };
-    (status: $status:expr, body: $body:expr) => {
-        Response::builder()
-            .header(hyper::header::CONTENT_TYPE, "application/json")
-            .status($status)
-            .body(serde_json::to_string($body).unwrap().into())
-            .unwrap()
-    };
-    (error: $e:expr) => {
-        json_response!(
-            status: hyper::StatusCode::INTERNAL_SERVER_ERROR,
-            body: &serde_json::json!({
-                "error": $e.to_string(),
-            }).to_string())
-    };
-}
-
-macro_rules! sender_failed_json {
-    ($m: expr, $f: tt) => {
-        match $m {
-            Ok(_) => {},
-            Err(e) => {
-                tracing::error!("Database Manager failed to get {}! error: {}", $f, e);
-                return Ok(json_response!(error: e));
-            }
-        }
-    }
-}
-
-macro_rules! recv_failed_json {
-    ($m: expr, $status: expr) => {
-        match $m {
-            Ok(d) => d,
-            Err(e) => {
-                tracing::error!("Database Manager returned error: {}", e);
-                return Ok(json_response!(
-                        status: $status,
-                        body: &e.to_string()))
-            }
-        }
-    }
-}
+use crate::{db::{UrlMap, Message}, server::State};
 
 pub async fn get_url_maps(req: Request<Body>) -> Result<Response<Body>> {
     let (tx, rx) = tokio::sync::oneshot::channel();
-    let sender = req.data::<Sender<Message>>().unwrap();
+    let state = req.data::<State>().unwrap();
+    let sender = state.db_sender();
     sender_failed_json!(
         sender
         .send(Message::GetUrlMaps { resp: tx })
@@ -66,7 +17,8 @@ pub async fn get_url_maps(req: Request<Body>) -> Result<Response<Body>> {
 }
 
 pub async fn get_url_map(req: Request<Body>) -> Result<Response<Body>> {
-    let sender = req.data::<Sender<Message>>().unwrap();
+    let state = req.data::<State>().unwrap();
+    let sender = state.db_sender();
     let (tx, rx) = tokio::sync::oneshot::channel();
     let key = req.param("key").unwrap();
     sender_failed_json!(
@@ -82,7 +34,8 @@ pub async fn create_url_map(mut req: Request<Body>) -> Result<Response<Body>> {
     let url_map_bytes = to_bytes(body).await?;
     let url_map = serde_json::from_slice::<UrlMap>(&url_map_bytes)?;
     let (tx, rx) = tokio::sync::oneshot::channel();
-    let sender = req.data::<Sender<Message>>().unwrap();
+    let state = req.data::<State>().unwrap();
+    let sender = state.db_sender();
     sender_failed_json!(
         sender
         .send(Message::CreateUrlMap { url_map, resp: tx })
@@ -103,7 +56,8 @@ pub async fn update_url_map(mut req: Request<Body>) -> Result<Response<Body>> {
     let key = req.param("key").unwrap();
     let url_map = UrlMap::new(key.into(), url_map_url.url);
     let (tx, rx) = tokio::sync::oneshot::channel();
-    let sender = req.data::<Sender<Message>>().unwrap();
+    let state = req.data::<State>().unwrap();
+    let sender = state.db_sender();
     sender_failed_json!(
         sender
         .send(Message::UpdateUrlMap { url_map, resp: tx })
@@ -114,7 +68,8 @@ pub async fn update_url_map(mut req: Request<Body>) -> Result<Response<Body>> {
 
 pub async fn delete_url_map(req: Request<Body>) -> Result<Response<Body>> {
     let key = req.param("key").unwrap();
-    let sender = req.data::<Sender<Message>>().unwrap();
+    let state = req.data::<State>().unwrap();
+    let sender = state.db_sender();
     let (tx, rx) = tokio::sync::oneshot::channel();
     sender_failed_json!(
         sender

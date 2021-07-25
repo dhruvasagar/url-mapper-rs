@@ -12,6 +12,7 @@ pub struct Database {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
+    pub env: String,
     pub host: String,
     pub port: i32,
     pub auth_token: String,
@@ -26,6 +27,7 @@ impl Config {
             .context("Unable to load the default config")?;
 
         let env = env::var("ENV").unwrap_or("development".into());
+        s.set("env", env.clone())?;
         s.merge(File::with_name(&format!("config/{}", env)).required(false))
             .context(format!("Unable to load config/{}.json", env))?;
 

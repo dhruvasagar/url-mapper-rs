@@ -1,7 +1,6 @@
 use crate::db::{DB, UrlMap};
 use sqlx::{Postgres, pool::PoolConnection};
 use tokio::sync::{mpsc::Receiver, oneshot::Sender};
-use tracing::error;
 
 type Responder<T> = Sender<Result<T, sqlx::Error>>;
 
@@ -20,15 +19,6 @@ pub struct Manager {
 }
 
 type Connection = PoolConnection<Postgres>;
-
-macro_rules! resp_failed {
-    ($m: expr, $f: tt) => {
-        match $m {
-            Ok(_) => {},
-            Err(e) => error!("Resp failed for {}, error: {:?}", $f, e)
-        }
-    }
-}
 
 impl Manager {
     pub fn new(db: DB, receiver: Receiver<Message>) -> Self {

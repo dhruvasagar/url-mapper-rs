@@ -1,4 +1,4 @@
-use crate::db::Message;
+use crate::{db::Message, server::State};
 use hyper::{
     Body,
     Request,
@@ -13,9 +13,9 @@ use routerify::{
 };
 use anyhow::{Error, Result};
 use tracing::{info, error};
-use tokio::sync::mpsc::Sender;
 
 mod api;
+mod admin;
 
 async fn logger(req: Request<Body>) -> Result<Request<Body>> {
     info!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
@@ -38,38 +38,9 @@ async fn error_handler(err: routerify::RouteError, _: RequestInfo) -> Response<B
         .unwrap()
 }
 
-macro_rules! sender_failed {
-    ($m: expr, $f: tt) => {
-        match $m {
-            Ok(_) => {},
-            Err(e) => {
-                error!("Database Manager failed to get {}! error: {}", $f, e);
-                return Ok(Response::builder()
-                          .status(hyper::StatusCode::INTERNAL_SERVER_ERROR)
-                          .body(Body::from(format!("Something went wrong: {}", e)))
-                          .unwrap());
-            }
-        }
-    }
-}
-
-macro_rules! recv_failed {
-    ($m: expr) => {
-        match $m {
-            Ok(d) => d,
-            Err(e) => {
-                error!("Database Manager returned error: {}", e);
-                return Ok(Response::builder()
-                          .status(hyper::StatusCode::NOT_FOUND)
-                          .body(Body::from("Key does not exist"))
-                          .unwrap());
-            }
-        }
-    }
-}
-
 async fn redirect_handler(req: Request<Body>) -> Result<Response<Body>> {
-    let sender = req.data::<Sender<Message>>().unwrap();
+    let state = req.data::<State>().unwrap();
+    let sender = state.db_sender();
     let key = req.param("key").unwrap();
     let (tx, rx) = tokio::sync::oneshot::channel();
     sender_failed!(
@@ -90,5 +61,6 @@ pub fn router() -> RouterBuilder<Body, Error> {
         .get("/", home_handler)
         .get("/:key", redirect_handler)
         .scope("/api", api::router())
+        .scope("/admin", admin::router())
         .err_handler_with_info(error_handler)
 }

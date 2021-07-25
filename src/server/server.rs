@@ -3,7 +3,7 @@ use crate::{db::Message, config::CONFIG};
 use routerify::RouterService;
 use anyhow::Result;
 use tracing::info;
-use super::routes;
+use super::{State, routes};
 use tokio::sync::mpsc::Sender;
 
 pub struct Server {
@@ -16,8 +16,9 @@ impl Server {
     }
 
     pub async fn listen(&self) -> Result<()> {
+        let state = State::new(self.db_sender.clone())?;
         let router = routes::router()
-            .data(self.db_sender.clone())
+            .data(state)
             .build()
             .unwrap();
         let service = RouterService::new(router).unwrap();
