@@ -3,6 +3,7 @@ use hyper::{
     Body,
     Request,
     Response,
+    header::HeaderValue
 };
 use routerify::{
     Middleware,
@@ -20,6 +21,15 @@ mod admin;
 async fn logger(req: Request<Body>) -> Result<Request<Body>> {
     info!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
     Ok(req)
+}
+
+async fn cors(mut res: Response<Body>) -> Result<Response<Body>> {
+    let headers = res.headers_mut();
+    headers.insert(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, HeaderValue::from_static("http://localhost:3000"));
+    headers.insert(hyper::header::ACCESS_CONTROL_ALLOW_HEADERS, HeaderValue::from_static("*"));
+    headers.insert(hyper::header::ACCESS_CONTROL_ALLOW_METHODS, HeaderValue::from_static("*"));
+    headers.insert(hyper::header::ACCESS_CONTROL_EXPOSE_HEADERS, HeaderValue::from_static("*"));
+    Ok(res)
 }
 
 async fn home_handler(_: Request<Body>) -> Result<Response<Body>> {
@@ -58,6 +68,7 @@ async fn redirect_handler(req: Request<Body>) -> Result<Response<Body>> {
 pub fn router() -> RouterBuilder<Body, Error> {
     Router::builder()
         .middleware(Middleware::pre(logger))
+        .middleware(Middleware::post(cors))
         .get("/", home_handler)
         .get("/:key", redirect_handler)
         .scope("/api", api::router())

@@ -17,6 +17,10 @@ fn validate_token(encoded_token: &str) -> Result<()> {
 }
 
 async fn auth_middleware(req: Request<Body>) -> Result<Request<Body>> {
+    if req.method() == hyper::Method::OPTIONS {
+        return Ok(req);
+    }
+
     let auth_token_header = req.headers().get(hyper::header::AUTHORIZATION);
     match auth_token_header {
         None => Err(anyhow!("Unauthorized Access")),
